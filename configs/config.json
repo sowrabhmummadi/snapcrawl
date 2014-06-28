@@ -1,0 +1,22 @@
+{
+    "URL" : "www.snapdeal.com",
+    
+    "redis" : {
+        "host" : "localhost",
+        "port" : "6379",
+        "listName" : "productsList",
+        "reviewsList": "reviewsList"
+    },
+    "elasticsearch":{
+        "host" : "localhost",
+        "port" : "9200",
+        "index" : "snapdeal",
+        "type" : "mobiles",
+        "pgdumpindex":"pgdumpindex",
+        "pgdumptype":"pgdumptype",
+        "reviewindex":"fk",
+        "reviewtype":"reviews",
+        "logfile" : "./logs/elasticlog.txt"
+    },
+    "logfile" : "./logs/log.txt"
+}
