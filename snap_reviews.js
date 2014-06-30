@@ -1,9 +1,7 @@
-/*JSLint node=true*/
 var http=require('http');
 var cheerio=require('cheerio');
 var elasticsearch = require('elasticsearch');
 var redis=require('redis');
-
 var redisClient=redis.createClient();
 var elsClient=new elasticsearch.Client({ host: 'localhost:9200' });
 var Data;
@@ -13,53 +11,88 @@ var options=
         port:80        
     };
 var url="http://www.snapdeal.com/product/apple-iphone-5s-16-gb/347830397";
-
-esearch(); 
-setInterval(function(){
+esearch();
+fetchData()
+function fetchData(){
         var avail='false';
-        redisClient.rpop('snapdealphonelinks',function(err,data){
-               if(data)
+        redisClient.llen('snapdealphonelinks',function(err,len)
+        {
+        	if(len==0)
+        		{return 1;}
+        console.log(len);
+        redisClient.rpop('snapdealphonelinks',function(err,link){
+               if(link)
                { 
                 redisClient.rpop('availability',function(err,d)
                     {
                         if(d)
                          {avail=Boolean(d);}
                    
-                options.path="/"+data;
-                var id=parseInt(data.substring(data.lastIndexOf('/')+1));
-            
-                  fetch(options,function(data)
-                        {
-                            var re1=/<\/html>/g;
-                            var re2=/<html>/g;
-                            var reviews=[];
-                            data=data.substring(data.search(re2),data.search(re1)+7);
-                            data=data.replace(/\/r/g,'');
-                            data.replace(/\/t/g,'');
-                            var $=cheerio.load(data);
-                            var features=$('div.details-content').text();
-                             $( "p.pr-review-rating-headline" ).each(function( index ) 
-                                {         
-                                   reviews[index]=$(this).text().trim();
-                                });    
+               			options.path="/"+link;
+                		var id=parseInt(link.substring(link.lastIndexOf('/')+1));
+                        var Data="";
+                       request=http.get(options,function(res)
+                           {	
+                                res.on('data',function(data)
+                                   {
+                                       Data+=data;
+                                   });
+                                res.on('end',function()
+                                    {
+                                        var re1=/<\/html>/g;
+                                        var re2=/<html>/g;
+                                        var reviews=[];
+                                                         Data=Data.substring(Data.search(re2),Data.search(re1)+7);
+                                        Data=Data.replace(/\/r/g,'');
+                                        Data=Data.replace(/\/t/g,'');
+                                        var $=cheerio.load(Data);
+                                        var features=$('div.details-content').text();
+                                         $( "p.pr-review-rating-headline" ).each(function( index ) 
+                                            {         
+                                               reviews[index]=$(this).text().trim();
+                                            });    
 
-                            $( "p.pr-comments" ).each(function( index ) 
-                                {         
-                                    reviews[index]+="!`!"+$(this).text().trim();
-                                }); 
-                            var rviews=reviews.join("##-##-##");
-                            var rating=$("div[class='lfloat pdpRatingStars']").attr("ratings").trim();
-                            var name=($("div.pdpName h1").text().trim());
-                            var price=parseInt($("span#selling-price-id").text().trim());
-                           insertData(id,name,price,rating,avail,features,rviews);
-                        });
-                         });
-               }
-               if(err)
-                     console.log(err);
-        });
-   
-   },3000); 
+                                        $( "p.pr-comments" ).each(function( index ) 
+                                            {         
+                                                reviews[index]+="!`!"+$(this).text().trim();
+                                            }); 
+                                        var rviews=reviews.join("##-##-##");
+                                        if(typeof reviews === 'undefined')
+                                            {
+                                               reviews="not Available"
+ 											};
+                                        var rating=$("div[class='lfloat pdpRatingStars']").attr("ratings");
+                                        if(typeof rating === 'undefined')
+                                            {
+                                               rating="not Available"
+ 											}
+ 										else
+ 										   rating.trim();
+                                        var name=($("div.pdpName h1").text().trim());
+                                        var price=parseInt($("span#selling-price-id").text().trim());
+                                        console.log("insert data")
+                                       insertData(id,name,price,rating,avail,features,rviews);
+                                          console.log("record pushed");
+                                          
+                                           //callback(Data);
+                                   });
+                                res.on('error',function(err)
+                                	{
+                                        console.log("error"); 
+                                        callback(null);
+              						});   
+
+                            });
+
+                    });
+                }
+	            if(err)
+	             console.log(err);
+                    
+        		});
+
+   });
+   } 
 function esearch()
     {
        elsClient.exists(
@@ -86,7 +119,7 @@ function esearch()
 						 elsClient.indices.putMapping(
 								{
 								   index:"snapdeal",
-									type:"mobiles",
+									type:" mobiles",
 									body:
 									{
 									   "mobiles":
@@ -135,47 +168,8 @@ function insertData(id,n,p,r,a,f,rv)
 				   {
 				   		if(err)
 						{console.log(err);}
-					   console.log("record pushed");
+					   console.log("inside insertdata");
+					   fetchData();
 				   });
 	
 }
-
-
-function getData(options,callback)
-   {
-       http.get(options,function(res)
-                {
-                    res.on('data',function(data)
-                           {Data+=data});
-                     res.on('end',function()
-                     {callback(Data);});
-                });
-             
-   }
-
-
-function fetch(option,callback)
-		{ var Data="";
-            
-                request=http.get(option,function(res){
-                        res.on('data',function(data)
-                               {
-                                   Data+=data;
-                               });
-                        res.on('end',function()
-                               {
-
-                                   callback(Data);
-                               });
-                        res.on('error',function(err){
-                            console.log("error"); 
-                            callback(null);
-                               });   
-
-                        });
-              	 
-        }
-	     
-
-       
-  
