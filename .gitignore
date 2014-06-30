@@ -1,6 +1,5 @@
 /test.js
 /node_modules/
-/file.txt
-/package.json
+/*.txt
 /package.json~
 /test.json

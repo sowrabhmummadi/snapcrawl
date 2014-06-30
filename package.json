@@ -1,0 +1,12 @@
+{
+  "name": "snapdealcrawl",
+  "version": "1.0.0",
+   "dependencies":
+    {
+        "async": "0.9.0",
+        "redis": "0.10.3",
+        "elasticsearch": "2.1.4",
+        "cheerio": "0.17.0",
+        "request":"2.36.0"
+    }
+}
