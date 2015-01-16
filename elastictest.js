@@ -8,7 +8,7 @@ function esearch()
 		elsClient.exists(
             {
                 index: "snapdeal",
-                type: "mobilles",
+                type: "mobiles",
                 id:''
             },function(err,exist)
                 {
